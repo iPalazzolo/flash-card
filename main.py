@@ -1,50 +1,56 @@
 from tkinter import *
 import pandas as pd
 import random
+import sys
 
 BACKGROUND_COLOR = "#B1DDC6"
+current_card = {}
+to_learn = {}
 
+random_italian_word = None
+random_spanish_word = None
 
-def read_data():
-    try:
-        df_it_words = pd.read_csv("data/italian_words.csv")
-    except FileNotFoundError:
-        show_warning()
-    else:
-        if not df_it_words.empty:
-            for index, row in df_it_words.iterrows():
-                italian_words.append(row[0])
-                spanish_words.append(row[1])
-
-
-italian_words = []
-spanish_words = []
-read_data()
-
-random_italian_word = random.choice(italian_words)
-random_spanish_word = spanish_words[italian_words.index(random_italian_word)]
+try:
+    df = pd.read_csv("data/italian_words.csv")
+except FileNotFoundError:
+    print("no file")
+    sys.exit()
+else:
+    if not df.empty:
+        words_dict = df.to_dict()
+        random_index = random.randint(0, len(words_dict["Italian"].values()))
+        random_italian_word = words_dict["Italian"][random_index]
+        random_spanish_word = words_dict["Spanish"][random_index]
 
 
 def flip_card():
-    window.after_cancel(call_id)
     # Si la carta tiene como título 'Italian', entonces lo cambio al español y viceversa
     if canvas.itemcget(card_title, "text").title() == "Italian":
+        window.after_cancel(call_id)
         canvas.itemconfig(card_background, image=card_back)
         canvas.itemconfig(card_title, text="Spanish", fill="white")
         canvas.itemconfig(card_word, text=random_spanish_word, fill="white")
     else:
+        window.after(3000)
         canvas.itemconfig(card_background, image=card_front)
         canvas.itemconfig(card_title, text="Italian", fill="black")
-        change_word()
+
+
+def right_button_pressed():
+    pass
 
 
 def change_word():
-    global random_italian_word
-    global random_spanish_word
+    global random_italian_word, random_spanish_word
 
-    random_italian_word = random.choice(italian_words)
-    random_spanish_word = spanish_words[italian_words.index(random_italian_word)]
-    canvas.itemconfig(card_word, text=random_italian_word)
+    if canvas.itemcget(card_title, "text").title() == "Spanish":
+        index = random.randint(0, len(words_dict["Italian"].values()))
+        random_italian_word = words_dict["Italian"][index]
+        random_spanish_word = words_dict["Spanish"][index]
+        canvas.itemconfig(card_background, image=card_front)
+        canvas.itemconfig(card_title, text="Italian", fill="black")
+        canvas.itemconfig(card_word, text=random_italian_word, fill="black")
+        window.after(3000, flip_card)
 
 
 def show_warning():
@@ -76,7 +82,7 @@ card_word = canvas.create_text(400, 263, text=random_italian_word, font=("Arial"
 right_img = PhotoImage(file="images/right.png")
 wrong_img = PhotoImage(file="images/wrong.png")
 
-right_button = Button(image=right_img, highlightthickness=0, command=change_word)
+right_button = Button(image=right_img, highlightthickness=0, command=right_button_pressed)
 right_button.grid(column=0, row=1)
 wrong_button = Button(image=wrong_img, highlightthickness=0, command=change_word)
 wrong_button.grid(column=1, row=1)
